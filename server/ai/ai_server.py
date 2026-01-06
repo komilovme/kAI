@@ -11,6 +11,11 @@ app = Flask(__name__)
 CORS(app)
 
 client = genai.Client(api_key = os.getenv("GEMINI_API_KEY"))
+
+@app.get("/")
+def root():
+    return {"status": "AI server is running"}
+
 @app.route("/ai", methods=["POST"])
 def analyze_text():
     try:
@@ -28,7 +33,7 @@ Faqat bitta qatorda javob qaytar.
 Format QATTIQ:
 "<raqam>-javob — <to‘liq javob matni>"
 
-Hech qanday izoh, tushuntirish, qo‘shimcha gap YO‘Q.
+Hech qanday izoh YO‘Q.
 
 Matn:
 {text}
@@ -37,22 +42,17 @@ Matn:
         res = client.models.generate_content(
             model="gemini-2.5-flash",
             contents=prompt,
-            config={
-                "temperature": 0,
-                "response_mime_type": "application/json"
-            }
+            config={"temperature": 0}
         )
-        try:
-            result = res.parsed
-            if not result:
-                result = json.loads(res.text)
-        except Exception:
-            result = {"answer": res.text.strip()}
 
-        return jsonify(result)
+        return jsonify({
+            "answer": res.text.strip()
+        })
 
     except Exception as e:
+        print("AI ERROR:", e)  # MUHIM
         return jsonify({"error": "AI bilan bog‘lanishda xatolik"}), 500
+
 
 
 if __name__ == "__main__":
