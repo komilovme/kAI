@@ -3,7 +3,4 @@ uvicorn
 pytesseract
 pillow
 pyautogui
-keyboard 
-requests
-pywin32
 python-multipart
