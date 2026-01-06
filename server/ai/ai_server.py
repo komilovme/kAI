@@ -3,11 +3,14 @@ from flask_cors import CORS
 from google import genai
 import json
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = Flask(__name__)
 CORS(app)
 
-client = genai.Client(api_key="AIzaSyBbMLz3Qz9SNhLEQrdxiv57d9ZzRVwdspo")
+client = genai.Client(api_key = os.getenv("GEMINI_API_KEY"))
 @app.route("/ai", methods=["POST"])
 def analyze_text():
     try:
@@ -53,4 +56,5 @@ Matn:
 
 
 if __name__ == "__main__":
-    app.run(port=5000)
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
