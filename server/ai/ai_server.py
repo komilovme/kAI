@@ -41,6 +41,7 @@ Format QATTIQ:
 "<raqam>-javob — <to‘liq javob matni>"
 
 Hech qanday izoh YO‘Q.
+Yahshilab o'ylanib keyin aniq javob ber.
 
 Matn:
 {text}
@@ -62,6 +63,47 @@ Matn:
     except Exception as e:
         print("AI ERROR:", e)
         return jsonify({"error": "Groq AI error"}), 500
+
+@app.route("/ai-image", methods=["POST"])
+def analyze_image():
+    try:
+        data = request.json
+        image_b64 = data.get("image_base64", "")
+        if not image_b64:
+            return jsonify({"error": "Image yo‘q"}), 400
+
+        prompt = (
+            "This is an exam question image. "
+            "Answer strictly in ONE line. "
+            "Format exactly: \"<raqam>-javob — <to‘liq javob>\". "
+            "No explanations."
+        )
+
+        chat = client.chat.completions.create(
+            model="models/llama-3.2-vision-preview",
+            messages=[
+                {
+                    "role": "admin",
+                    "content": [
+                        {"type": "text", "text": prompt},
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/png;base64,{image_b64}"
+                            }
+                        }
+                    ],
+                }
+            ],
+            temperature=0
+        )
+
+        answer = chat.choices[0].message.content.strip()
+        return jsonify({"answer": answer})
+
+    except Exception as e:
+        print("VISION ERROR:", e)
+        return jsonify({"error": "Vision AI error"}), 500
 
 
 if __name__ == "__main__":

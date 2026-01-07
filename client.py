@@ -7,10 +7,14 @@ import tkinter as tk
 import threading
 import win32gui
 import win32con
+import base64
+from io import BytesIO
 
 # === SERVER URLS ===
 OCR_URL = "https://kai-d0f8.onrender.com/ocr"
 AI_URL  = "https://kai-1-c89l.onrender.com/ai"
+AI_IMAGE_URL = "https://kai-1-c89l.onrender.com/ai-image"
+
 
 # === TOOLTIP ===
 def show_tooltip(text="Analysing...", duration=3):
@@ -70,7 +74,7 @@ def analyse_screen():
         ocr_data = ocr_res.json()
         text = ocr_data.get("text", "").strip()
 
-        print("OCR TEXT:\n", text)
+        # print("OCR TEXT:\n", text)
 
         if not text:
             show_tooltip("No text detected", duration=3)
@@ -89,7 +93,7 @@ def analyse_screen():
         answer = ai_data.get("answer", "Done")
 
         # 3️⃣ SHOW ANSWER (STEALTH)
-        show_tooltip(answer, duration=4)
+        show_tooltip(answer, duration = 10)
 
     except Exception as e:
         print("ERROR:", e)
@@ -98,14 +102,45 @@ def analyse_screen():
     finally:
         os.remove(img_path)
 
+def screenshot_to_base64():
+    img = pyautogui.screenshot()
+    buf = BytesIO()
+    img.save(buf, format="PNG")
+    return base64.b64encode(buf.getvalue()).decode()
+
+def analyse_image():
+    show_tooltip("Analysing image...", duration=5)
+
+    try:
+        img_b64 = screenshot_to_base64()
+
+        res = requests.post(
+            AI_IMAGE_URL,
+            json={"image_base64": img_b64},
+            timeout=40
+        )
+
+        data = res.json()
+        print("AI IMAGE RESPONSE:", data)
+
+        answer = data.get("answer", "Done")
+        show_tooltip(answer, duration=4)
+
+    except Exception as e:
+        print("IMAGE ERROR:", e)
+        show_tooltip("Image error", duration=3)
+
 
 # === HOTKEY ===
 def main():
     print("Running in background...")
-    print("Press CTRL + ALT + A")
+    print("CTRL + ALT + A  → OCR + AI")
+    print("CTRL + ALT + S  → IMAGE AI")
 
-    keyboard.add_hotkey("ctrl+alt+a", analyse_screen)
+    keyboard.add_hotkey("ctrl+alt+a", analyse_screen)  # oldingi OCR
+    keyboard.add_hotkey("ctrl+alt+s", analyse_image)   # yangi IMAGE
     keyboard.wait()
+
 
 
 if __name__ == "__main__":
