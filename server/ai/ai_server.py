@@ -1,20 +1,27 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from google import genai
-import json
 import os
-from dotenv import load_dotenv
-
-load_dotenv()
+from dotenv import load_dotenv 
+from groq import Groq
 
 app = Flask(__name__)
 CORS(app)
+load_dotenv()
 
-client = genai.Client(api_key = os.getenv("GEMINI_API_KEY"))
+client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
-@app.get("/")
-def root():
-    return {"status": "AI server is running"}
+@app.route("/", methods=["GET"])
+def health():
+    return {"status": "Groq AI server running"}
+
+@app.route("/test", methods=["GET"])
+def test_ai():
+    chat = client.chat.completions.create(
+        model="llama-3.1-8b-instant",
+        messages=[{"role": "user", "content": "Reply only with OK"}],
+        temperature=0
+    )
+    return {"reply": chat.choices[0].message.content}
 
 @app.route("/ai", methods=["POST"])
 def analyze_text():
@@ -39,20 +46,22 @@ Matn:
 {text}
 """
 
-        res = client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=prompt,
-            config={"temperature": 0}
+        chat = client.chat.completions.create(
+            model="llama-3.1-8b-instant",
+            messages=[
+                {"role": "system", "content": "You are a strict exam answer extractor."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0
         )
 
-        return jsonify({
-            "answer": res.text.strip()
-        })
+        answer = chat.choices[0].message.content.strip()
+
+        return jsonify({"answer": answer})
 
     except Exception as e:
-        print("AI ERROR:", e)  # MUHIM
-        return jsonify({"error": "AI bilan bog‘lanishda xatolik"}), 500
-
+        print("AI ERROR:", e)
+        return jsonify({"error": "Groq AI error"}), 500
 
 
 if __name__ == "__main__":
